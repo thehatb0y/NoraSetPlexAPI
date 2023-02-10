@@ -3,6 +3,7 @@ import random
 import threading
 import requests
 import time
+import os
 
 def set_header(token, jessionid, streamname, userid, addtime, duplicate, checkuser):
     header = {
@@ -67,7 +68,7 @@ def add_time(response, streamname, token, jsessionid, daystogive, fromp):
                     f.close()
     print(f"Received credit: {received_credit}")
 
-def duplicate(token, jsessionid, streamname, customerID):
+def duplicate(streamname, token, jsessionid, customerID):
     r = requests.get(set_CustomerUrl(customerID, streamname), headers=set_header(token, jsessionid, streamname, 0, False, False, True))
     if r.status_code == 200:
         r = r.json()
@@ -78,7 +79,9 @@ def duplicate(token, jsessionid, streamname, customerID):
         headers = set_header(token, jsessionid, streamname, customerID, False, True, False),
         data = set_duplicateAccPayload(str(int(r['name'])+2), password, r['firstname'], r['lastname']+"2", r['email'], r['phone'], r['address'], r['city'], r['zipcode'], r['country'])
         )
+
         print("Username: " + str(int(r['name'])+2) + " Password: "+ password)
+        print("")
         resp = resp.json()
         
         for i in range(4):
@@ -95,6 +98,23 @@ def duplicate(token, jsessionid, streamname, customerID):
             )
     else:
         exit()
+
+def delete_customer(streamname, token, jsessionid, customerID):
+    r = requests.request("DELETE", set_CustomerUrl(customerID, streamname), headers=set_header(token, jsessionid, streamname, 0, False, False, True), data={})
+    if r.status_code == 200:
+        print("Customer deleted")
+    else:
+        print("Error deleting customer")
+
+def NukeThisShit(streamname, token, jsessionid):
+    r = requests.get(set_url(0, streamname), headers=set_header(token, jsessionid, streamname, 0, False, False, False))
+    total_pages = r.json()['content']['totalPages']
+    for page in range(0, total_pages + 1):
+        print(f"Scrapping page {page}")
+        r = requests.get(set_url(page, streamname), headers=set_header(token, jsessionid, streamname, 0, False, False, False))
+        for contact in r.json()['content']['content']:
+            #delete_customer(streamname, token, jsessionid, contact['id'])
+            print(contact['id'])
 
 def noracheck(token, jsessionid, streamname, fromp, daystogive):
     #Page num, starts in 0
@@ -126,8 +146,9 @@ def noracheck(token, jsessionid, streamname, fromp, daystogive):
     print(f'Total time elapsed: {time_end - time_init}')   
 
 def noraJsonExport(token, jsessionid, streamname, fromp, daystogive):
-
+    #Page num, starts in 0
     page = 0
+    #Check if connection is working, if == 200 get the total pages
     response = requests.get(set_url(page, streamname), headers=set_header(token, jsessionid, streamname, 0, False, False, False))
     
     if response.status_code == 200:
@@ -137,6 +158,8 @@ def noraJsonExport(token, jsessionid, streamname, fromp, daystogive):
         exit()
 
     time_init = time.time() 
+    #Run all pages and check  through all the customerers. 
+    #Each page holds 1000 customers
     for page in range(page, total_pages+1):
         print(f"Exporting page {page}")
         response = requests.get(set_url(page, streamname), headers=set_header(token, jsessionid, streamname, 0, False, False, False))
