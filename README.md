@@ -1,4 +1,4 @@
-# NoraSetplex
+# NoraSetplex - DEPRECATED
 This is a python automation to manage Nora through the API, the idea behind is taking massive actions like add account time, remove devices, clear devices IP and more.
 
 Current Features
